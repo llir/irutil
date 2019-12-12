@@ -20,6 +20,10 @@ type Ident interface {
 // ResetNames resets the IDs of unnamed local variables in the given function.
 func ResetNames(f *ir.Func) {
 	for _, b := range f.Blocks {
+		// clear ID of unnamed basic block.
+		if b.IsUnnamed() {
+			b.SetName("")
+		}
 		for _, i := range b.Insts {
 			if i, ok := i.(Ident); ok {
 				if i.IsUnnamed() {
