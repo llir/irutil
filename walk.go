@@ -9,6 +9,7 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/metadata"
 	"github.com/llir/llvm/ir/value"
 )
 
@@ -52,6 +53,8 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 	case **ir.UseListOrder:
 		walk(*root, visit, visited)
 	case **ir.UseListOrderBB:
+		walk(*root, visit, visited)
+	case **metadata.Value:
 		walk(*root, visit, visited)
 	// Constants
 	// Simple constants
@@ -387,6 +390,8 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 	case *ir.UseListOrderBB:
 		walk(&root.Func, visit, visited)
 		walk(&root.Block, visit, visited)
+	case *metadata.Value:
+		walk(&root.Value, visit, visited)
 
 	// interface.
 	case constant.Constant:
