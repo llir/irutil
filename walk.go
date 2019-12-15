@@ -54,8 +54,6 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walk(*root, visit, visited)
 	case **ir.UseListOrderBB:
 		walk(*root, visit, visited)
-	case **metadata.Value:
-		walk(*root, visit, visited)
 	// Constants
 	// Simple constants
 	case **constant.Int:
@@ -322,6 +320,80 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walk(*root, visit, visited)
 	case **ir.TermUnreachable:
 		walk(*root, visit, visited)
+	// Metadata.
+	case **metadata.NamedDef:
+		walk(*root, visit, visited)
+	case **metadata.Tuple:
+		walk(*root, visit, visited)
+	case **metadata.Value:
+		walk(*root, visit, visited)
+	case **metadata.String:
+		walk(*root, visit, visited)
+	case **metadata.Attachment:
+		walk(*root, visit, visited)
+	case **metadata.NullLit:
+		walk(*root, visit, visited)
+	// Specialized metadata node.
+	case **metadata.DIBasicType:
+		walk(*root, visit, visited)
+	case **metadata.DICommonBlock:
+		walk(*root, visit, visited)
+	case **metadata.DICompileUnit:
+		walk(*root, visit, visited)
+	case **metadata.DICompositeType:
+		walk(*root, visit, visited)
+	case **metadata.DIDerivedType:
+		walk(*root, visit, visited)
+	case **metadata.DIEnumerator:
+		walk(*root, visit, visited)
+	case **metadata.DIExpression:
+		walk(*root, visit, visited)
+	case **metadata.DIFile:
+		walk(*root, visit, visited)
+	case **metadata.DIGlobalVariable:
+		walk(*root, visit, visited)
+	case **metadata.DIGlobalVariableExpression:
+		walk(*root, visit, visited)
+	case **metadata.DIImportedEntity:
+		walk(*root, visit, visited)
+	case **metadata.DILabel:
+		walk(*root, visit, visited)
+	case **metadata.DILexicalBlock:
+		walk(*root, visit, visited)
+	case **metadata.DILexicalBlockFile:
+		walk(*root, visit, visited)
+	case **metadata.DILocalVariable:
+		walk(*root, visit, visited)
+	case **metadata.DILocation:
+		walk(*root, visit, visited)
+	case **metadata.DIMacro:
+		walk(*root, visit, visited)
+	case **metadata.DIMacroFile:
+		walk(*root, visit, visited)
+	case **metadata.DIModule:
+		walk(*root, visit, visited)
+	case **metadata.DINamespace:
+		walk(*root, visit, visited)
+	case **metadata.DIObjCProperty:
+		walk(*root, visit, visited)
+	case **metadata.DISubprogram:
+		walk(*root, visit, visited)
+	case **metadata.DISubrange:
+		walk(*root, visit, visited)
+	case **metadata.DISubroutineType:
+		walk(*root, visit, visited)
+	case **metadata.DITemplateTypeParameter:
+		walk(*root, visit, visited)
+	case **metadata.DITemplateValueParameter:
+		walk(*root, visit, visited)
+	case **metadata.GenericDINode:
+		walk(*root, visit, visited)
+
+	// pointer to struct (with value receiver).
+	case *metadata.IntLit:
+		walk(*root, visit, visited)
+	case *metadata.UintLit:
+		walk(*root, visit, visited)
 
 	// pointer to interface.
 	case *constant.Constant:
@@ -339,6 +411,23 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 	case *ir.ExceptionScope:
 		walk(*root, visit, visited)
 	case *ir.UnwindTarget:
+		walk(*root, visit, visited)
+	// Metadata.
+	case *metadata.Node:
+		walk(*root, visit, visited)
+	case *metadata.Definition:
+		walk(*root, visit, visited)
+	case *metadata.MDNode:
+		walk(*root, visit, visited)
+	case *metadata.Field:
+		walk(*root, visit, visited)
+	case *metadata.SpecializedNode:
+		walk(*root, visit, visited)
+	case *metadata.FieldOrInt:
+		walk(*root, visit, visited)
+	case *metadata.DIExpressionField:
+		walk(*root, visit, visited)
+	case *metadata.Metadata:
 		walk(*root, visit, visited)
 
 	// pointer to struct.
@@ -390,8 +479,29 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 	case *ir.UseListOrderBB:
 		walk(&root.Func, visit, visited)
 		walk(&root.Block, visit, visited)
+	// Metadata.
+	case *metadata.NamedDef:
+		for i := range root.Nodes {
+			walk(&root.Nodes[i], visit, visited)
+		}
+	case *metadata.Tuple:
+		for i := range root.Fields {
+			walk(&root.Fields[i], visit, visited)
+		}
 	case *metadata.Value:
 		walk(&root.Value, visit, visited)
+	case *metadata.String:
+		// nothing to do.
+	case *metadata.Attachment:
+		walk(&root.Node, visit, visited)
+	case *metadata.NullLit:
+		// nothing to do.
+
+	// struct (with value receiver).
+	case metadata.IntLit:
+		// nothing to do.
+	case metadata.UintLit:
+		// nothing to do.
 
 	// interface.
 	case constant.Constant:
@@ -410,6 +520,8 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walkValue(root, visit, visited)
 	case ir.UnwindTarget:
 		walkUnwindTarget(root, visit, visited)
+	case metadata.SpecializedNode:
+		walkSpecializedMetadataNode(root, visit, visited)
 	default:
 		panic(fmt.Errorf("support for LLVM IR AST node type %T not yet implemented", root))
 	}
@@ -901,5 +1013,232 @@ func walkUnwindTarget(root ir.UnwindTarget, visit func(n interface{}) bool, visi
 		// nothing to do
 	default:
 		panic(fmt.Errorf("support for LLVM IR AST node type %T not yet implemented", root))
+	}
+}
+
+// walkSpecializedMetadataNode walks the LLVM IR AST in depth-first order;
+// invoking visit recursively for each non-nil child of root. If visit returns
+// false, the walk is terminated. Visited tracks visited nodes.
+func walkSpecializedMetadataNode(root metadata.SpecializedNode, visit func(n interface{}) bool, visited map[interface{}]bool) {
+	switch root := root.(type) {
+	// Specialized metadata node.
+	case *metadata.DIBasicType:
+		// nothing to do.
+	case *metadata.DICommonBlock:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.Declaration != nil {
+			walk(&root.Declaration, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+	case *metadata.DICompileUnit:
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Enums != nil {
+			walk(&root.Enums, visit, visited)
+		}
+		if root.RetainedTypes != nil {
+			walk(&root.RetainedTypes, visit, visited)
+		}
+		if root.Globals != nil {
+			walk(&root.Globals, visit, visited)
+		}
+		if root.Imports != nil {
+			walk(&root.Imports, visit, visited)
+		}
+		if root.Macros != nil {
+			walk(&root.Macros, visit, visited)
+		}
+	case *metadata.DICompositeType:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.BaseType != nil {
+			walk(&root.BaseType, visit, visited)
+		}
+		if root.Elements != nil {
+			walk(&root.Elements, visit, visited)
+		}
+		if root.VtableHolder != nil {
+			walk(&root.VtableHolder, visit, visited)
+		}
+		if root.TemplateParams != nil {
+			walk(&root.TemplateParams, visit, visited)
+		}
+		if root.Discriminator != nil {
+			walk(&root.Discriminator, visit, visited)
+		}
+	case *metadata.DIDerivedType:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.BaseType != nil {
+			walk(&root.BaseType, visit, visited)
+		}
+		if root.ExtraData != nil {
+			walk(&root.ExtraData, visit, visited)
+		}
+	case *metadata.DIEnumerator:
+		// nothing to do.
+	case *metadata.DIExpression:
+		// nothing to do.
+	case *metadata.DIFile:
+		// nothing to do.
+	case *metadata.DIGlobalVariable:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+		if root.TemplateParams != nil {
+			walk(&root.TemplateParams, visit, visited)
+		}
+		if root.Declaration != nil {
+			walk(&root.Declaration, visit, visited)
+		}
+	case *metadata.DIGlobalVariableExpression:
+		if root.Var != nil {
+			walk(&root.Var, visit, visited)
+		}
+		if root.Expr != nil {
+			walk(&root.Expr, visit, visited)
+		}
+	case *metadata.DIImportedEntity:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.Entity != nil {
+			walk(&root.Entity, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+	case *metadata.DILabel:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+	case *metadata.DILexicalBlock:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+	case *metadata.DILexicalBlockFile:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+	case *metadata.DILocalVariable:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+	case *metadata.DILocation:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.InlinedAt != nil {
+			walk(&root.InlinedAt, visit, visited)
+		}
+	case *metadata.DIMacro:
+		// nothing to do.
+	case *metadata.DIMacroFile:
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Nodes != nil {
+			walk(&root.Nodes, visit, visited)
+		}
+	case *metadata.DIModule:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+	case *metadata.DINamespace:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+	case *metadata.DIObjCProperty:
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+	case *metadata.DISubprogram:
+		if root.Scope != nil {
+			walk(&root.Scope, visit, visited)
+		}
+		if root.File != nil {
+			walk(&root.File, visit, visited)
+		}
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+		if root.ContainingType != nil {
+			walk(&root.ContainingType, visit, visited)
+		}
+		if root.Unit != nil {
+			walk(&root.Unit, visit, visited)
+		}
+		if root.TemplateParams != nil {
+			walk(&root.TemplateParams, visit, visited)
+		}
+		if root.Declaration != nil {
+			walk(&root.Declaration, visit, visited)
+		}
+		if root.RetainedNodes != nil {
+			walk(&root.RetainedNodes, visit, visited)
+		}
+		if root.ThrownTypes != nil {
+			walk(&root.ThrownTypes, visit, visited)
+		}
+	case *metadata.DISubrange:
+		if root.Count != nil {
+			walk(&root.Count, visit, visited)
+		}
+	case *metadata.DISubroutineType:
+		if root.Types != nil {
+			walk(&root.Types, visit, visited)
+		}
+	case *metadata.DITemplateTypeParameter:
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+	case *metadata.DITemplateValueParameter:
+		if root.Type != nil {
+			walk(&root.Type, visit, visited)
+		}
+		if root.Value != nil {
+			walk(&root.Value, visit, visited)
+		}
+	case *metadata.GenericDINode:
+		for i := range root.Operands {
+			walk(&root.Operands[i], visit, visited)
+		}
 	}
 }
