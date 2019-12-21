@@ -80,7 +80,7 @@ func resetType(inst value.Value) {
 	case *ir.InstAlloca:
 		inst.Typ = nil
 	case *ir.InstLoad:
-		inst.Typ = nil
+		// type not cached.
 	case *ir.InstCmpXchg:
 		inst.Typ = nil
 	case *ir.InstAtomicRMW:
