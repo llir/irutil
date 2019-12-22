@@ -338,6 +338,12 @@ func InstUses(inst ir.Instruction) []*Use {
 			uses = append(uses, use)
 		}
 		return uses
+	// TODO: figure out how to handle user defined instructions (e.g. Comment).
+	// TODO: remove *Comment case and add support for more general way of
+	// identifying user-defined instructions.
+	case *Comment:
+		// no value operands.
+		return nil
 	default:
 		panic(fmt.Errorf("support for instruction %T not yet implemented", inst))
 	}
