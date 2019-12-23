@@ -31,313 +31,249 @@ func (use *Use) Replace(new value.Value) {
 }
 
 // FuncUses returns value uses of instructions and terminators in the given
-// function.
-func FuncUses(f *ir.Func) []*Use {
-	var uses []*Use
+// function. To avoid memory allocation, an optional backing slice may be
+// provided; if nil or insufficient space, a new backing slice will be
+// allocated.
+func FuncUses(backing []*Use, f *ir.Func) []*Use {
 	for _, block := range f.Blocks {
 		for _, inst := range block.Insts {
-			us := InstUses(inst)
-			uses = append(uses, us...)
+			backing = InstUses(backing, inst)
 		}
-		us := TermUses(block.Term)
-		uses = append(uses, us...)
+		backing = TermUses(backing, block.Term)
 	}
-	return uses
+	return backing
 }
 
 // TODO: consider renaming InstUses to InstOperands.
 
-// InstUses returns value uses of the given instruction.
-func InstUses(inst ir.Instruction) []*Use {
+// InstUses returns value uses of the given instruction. To avoid memory
+// allocation, an optional backing slice may be provided; if nil or insufficient
+// space, a new backing slice will be allocated.
+func InstUses(backing []*Use, inst ir.Instruction) []*Use {
 	switch inst := inst.(type) {
 	// Unary instructions
 	case *ir.InstFNeg:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		return backing
 	// Binary instructions
 	case *ir.InstAdd:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFAdd:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstSub:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFSub:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstMul:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFMul:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstUDiv:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstSDiv:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFDiv:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstURem:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstSRem:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFRem:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	// Bitwise instructions
 	case *ir.InstShl:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstLShr:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstAShr:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstAnd:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstOr:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstXor:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	// Vector instructions
 	case *ir.InstExtractElement:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Index, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Index, User: inst})
+		return backing
 	case *ir.InstInsertElement:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Elem, User: inst},
-			{Val: &inst.Index, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Elem, User: inst})
+		backing = append(backing, &Use{Val: &inst.Index, User: inst})
+		return backing
 	case *ir.InstShuffleVector:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-			{Val: &inst.Mask, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		backing = append(backing, &Use{Val: &inst.Mask, User: inst})
+		return backing
 	// Aggregate instructions
 	case *ir.InstExtractValue:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		return backing
 	case *ir.InstInsertValue:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Elem, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Elem, User: inst})
+		return backing
 	// Memory instructions
 	case *ir.InstAlloca:
-		var uses []*Use
 		if inst.NElems != nil {
-			use := &Use{Val: &inst.NElems, User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.NElems, User: inst})
 		}
-		return uses
+		return backing
 	case *ir.InstLoad:
-		return []*Use{
-			{Val: &inst.Src, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Src, User: inst})
+		return backing
 	case *ir.InstStore:
-		return []*Use{
-			{Val: &inst.Src, User: inst},
-			{Val: &inst.Dst, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Src, User: inst})
+		backing = append(backing, &Use{Val: &inst.Dst, User: inst})
+		return backing
 	case *ir.InstFence:
 		// no value operands.
 		return nil
 	case *ir.InstCmpXchg:
-		return []*Use{
-			{Val: &inst.Ptr, User: inst},
-			{Val: &inst.Cmp, User: inst},
-			{Val: &inst.New, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Ptr, User: inst})
+		backing = append(backing, &Use{Val: &inst.Cmp, User: inst})
+		backing = append(backing, &Use{Val: &inst.New, User: inst})
+		return backing
 	case *ir.InstAtomicRMW:
-		return []*Use{
-			{Val: &inst.Dst, User: inst},
-			{Val: &inst.X, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Dst, User: inst})
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		return backing
 	case *ir.InstGetElementPtr:
-		uses := []*Use{
-			{Val: &inst.Src, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Src, User: inst})
 		for i := range inst.Indices {
-			use := &Use{Val: &inst.Indices[i], User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Indices[i], User: inst})
 		}
-		return uses
+		return backing
 	// Conversion instructions
 	case *ir.InstTrunc:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstZExt:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstSExt:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstFPTrunc:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstFPExt:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstFPToUI:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstFPToSI:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstUIToFP:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstSIToFP:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstPtrToInt:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstIntToPtr:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstBitCast:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	case *ir.InstAddrSpaceCast:
-		return []*Use{
-			{Val: &inst.From, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.From, User: inst})
+		return backing
 	// Other instructions
 	case *ir.InstICmp:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstFCmp:
-		return []*Use{
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstPhi:
-		var uses []*Use
 		for i := range inst.Incs {
-			use := &Use{Val: &inst.Incs[i].X, User: inst}
-			uses = append(uses, use)
-			use = &Use{Val: &inst.Incs[i].Pred, User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Incs[i].X, User: inst})
+			backing = append(backing, &Use{Val: &inst.Incs[i].Pred, User: inst})
 		}
-		return uses
+		return backing
 	case *ir.InstSelect:
-		return []*Use{
-			{Val: &inst.Cond, User: inst},
-			{Val: &inst.X, User: inst},
-			{Val: &inst.Y, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Cond, User: inst})
+		backing = append(backing, &Use{Val: &inst.X, User: inst})
+		backing = append(backing, &Use{Val: &inst.Y, User: inst})
+		return backing
 	case *ir.InstCall:
-		uses := []*Use{
-			{Val: &inst.Callee, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Callee, User: inst})
 		for i := range inst.Args {
-			use := &Use{Val: &inst.Args[i], User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Args[i], User: inst})
 		}
 		for i := range inst.OperandBundles {
 			for j := range inst.OperandBundles[i].Inputs {
-				use := &Use{Val: &inst.OperandBundles[i].Inputs[j], User: inst}
-				uses = append(uses, use)
+				backing = append(backing, &Use{Val: &inst.OperandBundles[i].Inputs[j], User: inst})
 			}
 		}
-		return uses
+		return backing
 	case *ir.InstVAArg:
-		return []*Use{
-			{Val: &inst.ArgList, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.ArgList, User: inst})
+		return backing
 	case *ir.InstLandingPad:
-		var uses []*Use
 		for i := range inst.Clauses {
-			use := &Use{Val: &inst.Clauses[i].X, User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Clauses[i].X, User: inst})
 		}
-		return uses
+		return backing
 	case *ir.InstCatchPad:
-		uses := []*Use{
-			{Val: &inst.Scope, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Scope, User: inst})
 		for i := range inst.Args {
-			use := &Use{Val: &inst.Args[i], User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Args[i], User: inst})
 		}
-		return uses
+		return backing
 	case *ir.InstCleanupPad:
-		uses := []*Use{
-			{Val: &inst.Scope, User: inst},
-		}
+		backing = append(backing, &Use{Val: &inst.Scope, User: inst})
 		for i := range inst.Args {
-			use := &Use{Val: &inst.Args[i], User: inst}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &inst.Args[i], User: inst})
 		}
-		return uses
+		return backing
 	// TODO: figure out how to handle user defined instructions (e.g. Comment).
 	// TODO: remove *Comment case and add support for more general way of
 	// identifying user-defined instructions.
@@ -349,112 +285,84 @@ func InstUses(inst ir.Instruction) []*Use {
 	}
 }
 
-// TermUses returns value uses of the given terminator.
-func TermUses(term ir.Terminator) []*Use {
+// TermUses returns value uses of the given terminator. To avoid memory
+// allocation, an optional backing slice may be provided; if nil or insufficient
+// space, a new backing slice will be allocated.
+func TermUses(backing []*Use, term ir.Terminator) []*Use {
 	switch term := term.(type) {
 	case *ir.TermRet:
-		var uses []*Use
 		if term.X != nil {
-			use := &Use{Val: &term.X, User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.X, User: term})
 		}
-		return uses
+		return backing
 	case *ir.TermBr:
-		return []*Use{
-			{Val: &term.Target, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Target, User: term})
+		return backing
 	case *ir.TermCondBr:
-		return []*Use{
-			{Val: &term.Cond, User: term},
-			{Val: &term.TargetTrue, User: term},
-			{Val: &term.TargetFalse, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Cond, User: term})
+		backing = append(backing, &Use{Val: &term.TargetTrue, User: term})
+		backing = append(backing, &Use{Val: &term.TargetFalse, User: term})
+		return backing
 	case *ir.TermSwitch:
-		uses := []*Use{
-			{Val: &term.X, User: term},
-			{Val: &term.TargetDefault, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.X, User: term})
+		backing = append(backing, &Use{Val: &term.TargetDefault, User: term})
 		for i := range term.Cases {
-			use := &Use{Val: &term.Cases[i].X, User: term}
-			uses = append(uses, use)
-			use = &Use{Val: &term.Cases[i].Target, User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.Cases[i].X, User: term})
+			backing = append(backing, &Use{Val: &term.Cases[i].Target, User: term})
 		}
-		return uses
+		return backing
 	case *ir.TermIndirectBr:
-		uses := []*Use{
-			{Val: &term.Addr, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Addr, User: term})
 		for i := range term.ValidTargets {
-			use := &Use{Val: &term.ValidTargets[i], User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.ValidTargets[i], User: term})
 		}
-		return uses
+		return backing
 	case *ir.TermInvoke:
-		uses := []*Use{
-			{Val: &term.Invokee, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Invokee, User: term})
 		for i := range term.Args {
-			use := &Use{Val: &term.Args[i], User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.Args[i], User: term})
 		}
-		use := &Use{Val: &term.Normal, User: term}
-		uses = append(uses, use)
-		use = &Use{Val: &term.Exception, User: term}
-		uses = append(uses, use)
+		backing = append(backing, &Use{Val: &term.Normal, User: term})
+		backing = append(backing, &Use{Val: &term.Exception, User: term})
 		for i := range term.OperandBundles {
 			for j := range term.OperandBundles[i].Inputs {
-				use := &Use{Val: &term.OperandBundles[i].Inputs[j], User: term}
-				uses = append(uses, use)
+				backing = append(backing, &Use{Val: &term.OperandBundles[i].Inputs[j], User: term})
 			}
 		}
-		return uses
+		return backing
 	case *ir.TermCallBr:
-		uses := []*Use{
-			{Val: &term.Callee, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Callee, User: term})
 		for i := range term.Args {
-			use := &Use{Val: &term.Args[i], User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.Args[i], User: term})
 		}
-		use := &Use{Val: &term.Normal, User: term}
-		uses = append(uses, use)
+		backing = append(backing, &Use{Val: &term.Normal, User: term})
 		for i := range term.Others {
-			use := &Use{Val: &term.Others[i], User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.Others[i], User: term})
 		}
 		for i := range term.OperandBundles {
 			for j := range term.OperandBundles[i].Inputs {
-				use := &Use{Val: &term.OperandBundles[i].Inputs[j], User: term}
-				uses = append(uses, use)
+				backing = append(backing, &Use{Val: &term.OperandBundles[i].Inputs[j], User: term})
 			}
 		}
-		return uses
+		return backing
 	case *ir.TermResume:
-		return []*Use{
-			{Val: &term.X, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.X, User: term})
+		return backing
 	case *ir.TermCatchSwitch:
-		uses := []*Use{
-			{Val: &term.Scope, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.Scope, User: term})
 		for i := range term.Handlers {
-			use := &Use{Val: &term.Handlers[i], User: term}
-			uses = append(uses, use)
+			backing = append(backing, &Use{Val: &term.Handlers[i], User: term})
 		}
-		use := &Use{Val: &term.UnwindTarget, User: term}
-		uses = append(uses, use)
-		return uses
+		backing = append(backing, &Use{Val: &term.UnwindTarget, User: term})
+		return backing
 	case *ir.TermCatchRet:
-		return []*Use{
-			{Val: &term.From, User: term},
-			{Val: &term.To, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.From, User: term})
+		backing = append(backing, &Use{Val: &term.To, User: term})
+		return backing
 	case *ir.TermCleanupRet:
-		return []*Use{
-			{Val: &term.From, User: term},
-			{Val: &term.UnwindTarget, User: term},
-		}
+		backing = append(backing, &Use{Val: &term.From, User: term})
+		backing = append(backing, &Use{Val: &term.UnwindTarget, User: term})
+		return backing
 	case *ir.TermUnreachable:
 		// no value operands.
 		return nil
