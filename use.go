@@ -167,7 +167,7 @@ func InstUses(backing []*Use, inst ir.Instruction) []*Use {
 		return backing
 	case *ir.InstFence:
 		// no value operands.
-		return nil
+		return backing
 	case *ir.InstCmpXchg:
 		backing = append(backing, &Use{Val: &inst.Ptr, User: inst})
 		backing = append(backing, &Use{Val: &inst.Cmp, User: inst})
@@ -279,7 +279,7 @@ func InstUses(backing []*Use, inst ir.Instruction) []*Use {
 	// identifying user-defined instructions.
 	case *Comment:
 		// no value operands.
-		return nil
+		return backing
 	default:
 		panic(fmt.Errorf("support for instruction %T not yet implemented", inst))
 	}
@@ -365,7 +365,7 @@ func TermUses(backing []*Use, term ir.Terminator) []*Use {
 		return backing
 	case *ir.TermUnreachable:
 		// no value operands.
-		return nil
+		return backing
 	default:
 		panic(fmt.Errorf("support for terminator %T not yet implemented", term))
 	}
