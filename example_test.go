@@ -96,8 +96,8 @@ func pruneUnusedInsts(f *ir.Func, usedIdents map[string]bool) bool {
 		block.Insts = insts
 	}
 	if pruned {
-		// Reset IDs of unnamed local variables, as one or more instructions have
-		// been pruned.
+		// Reset IDs of unnamed local variables (as one or more instructions have
+		// been pruned).
 		irutil.ResetNames(f)
 	}
 	return pruned
@@ -131,7 +131,7 @@ func isUnused(inst ir.Instruction, usedIdents map[string]bool) bool {
 
 // getUsedIdents returns the names of local variables used in f.
 func getUsedIdents(f *ir.Func) (map[string]bool, error) {
-	// Assign IDs to unnamed local variables (as weneed to record the names of
+	// Assign IDs to unnamed local variables (as we need to record the names of
 	// local variables used in f).
 	if err := f.AssignIDs(); err != nil {
 		return nil, errors.WithStack(err)
