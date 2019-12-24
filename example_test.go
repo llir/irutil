@@ -34,7 +34,9 @@ define i32 @f(i32 %x, i32 %y) {
 	}
 	// Perform dead code elimination (dce).
 	for _, f := range m.Funcs {
-		dce(f)
+		if err := dce(f); err != nil {
+			log.Fatalf("%+v", err)
+		}
 	}
 	// Print LLVM IR module after dce.
 	fmt.Println(m)
