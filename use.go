@@ -240,8 +240,8 @@ func InstUses(backing []Use, inst ir.Instruction) []Use {
 		return backing
 	case *ir.InstSelect:
 		backing = append(backing, Use{Val: &inst.Cond, User: inst})
-		backing = append(backing, Use{Val: &inst.X, User: inst})
-		backing = append(backing, Use{Val: &inst.Y, User: inst})
+		backing = append(backing, Use{Val: &inst.ValueTrue, User: inst})
+		backing = append(backing, Use{Val: &inst.ValueFalse, User: inst})
 		return backing
 	case *ir.InstCall:
 		backing = append(backing, Use{Val: &inst.Callee, User: inst})
@@ -263,13 +263,13 @@ func InstUses(backing []Use, inst ir.Instruction) []Use {
 		}
 		return backing
 	case *ir.InstCatchPad:
-		backing = append(backing, Use{Val: &inst.Scope, User: inst})
+		backing = append(backing, Use{Val: &inst.CatchSwitch, User: inst})
 		for i := range inst.Args {
 			backing = append(backing, Use{Val: &inst.Args[i], User: inst})
 		}
 		return backing
 	case *ir.InstCleanupPad:
-		backing = append(backing, Use{Val: &inst.Scope, User: inst})
+		backing = append(backing, Use{Val: &inst.ParentPad, User: inst})
 		for i := range inst.Args {
 			backing = append(backing, Use{Val: &inst.Args[i], User: inst})
 		}
@@ -322,8 +322,8 @@ func TermUses(backing []Use, term ir.Terminator) []Use {
 		for i := range term.Args {
 			backing = append(backing, Use{Val: &term.Args[i], User: term})
 		}
-		backing = append(backing, Use{Val: &term.Normal, User: term})
-		backing = append(backing, Use{Val: &term.Exception, User: term})
+		backing = append(backing, Use{Val: &term.NormalRetTarget, User: term})
+		backing = append(backing, Use{Val: &term.ExceptionRetTarget, User: term})
 		for i := range term.OperandBundles {
 			for j := range term.OperandBundles[i].Inputs {
 				backing = append(backing, Use{Val: &term.OperandBundles[i].Inputs[j], User: term})
@@ -335,9 +335,9 @@ func TermUses(backing []Use, term ir.Terminator) []Use {
 		for i := range term.Args {
 			backing = append(backing, Use{Val: &term.Args[i], User: term})
 		}
-		backing = append(backing, Use{Val: &term.Normal, User: term})
-		for i := range term.Others {
-			backing = append(backing, Use{Val: &term.Others[i], User: term})
+		backing = append(backing, Use{Val: &term.NormalRetTarget, User: term})
+		for i := range term.OtherRetTargets {
+			backing = append(backing, Use{Val: &term.OtherRetTargets[i], User: term})
 		}
 		for i := range term.OperandBundles {
 			for j := range term.OperandBundles[i].Inputs {
@@ -349,18 +349,18 @@ func TermUses(backing []Use, term ir.Terminator) []Use {
 		backing = append(backing, Use{Val: &term.X, User: term})
 		return backing
 	case *ir.TermCatchSwitch:
-		backing = append(backing, Use{Val: &term.Scope, User: term})
+		backing = append(backing, Use{Val: &term.ParentPad, User: term})
 		for i := range term.Handlers {
 			backing = append(backing, Use{Val: &term.Handlers[i], User: term})
 		}
-		backing = append(backing, Use{Val: &term.UnwindTarget, User: term})
+		backing = append(backing, Use{Val: &term.DefaultUnwindTarget, User: term})
 		return backing
 	case *ir.TermCatchRet:
-		backing = append(backing, Use{Val: &term.From, User: term})
-		backing = append(backing, Use{Val: &term.To, User: term})
+		backing = append(backing, Use{Val: &term.CatchPad, User: term})
+		backing = append(backing, Use{Val: &term.Target, User: term})
 		return backing
 	case *ir.TermCleanupRet:
-		backing = append(backing, Use{Val: &term.From, User: term})
+		backing = append(backing, Use{Val: &term.CleanupPad, User: term})
 		backing = append(backing, Use{Val: &term.UnwindTarget, User: term})
 		return backing
 	case *ir.TermUnreachable:
