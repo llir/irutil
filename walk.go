@@ -310,6 +310,8 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walk(*root, visit, visited)
 	case **ir.TermInvoke:
 		walk(*root, visit, visited)
+	case **ir.TermCallBr:
+		walk(*root, visit, visited)
 	case **ir.TermResume:
 		walk(*root, visit, visited)
 	case **ir.TermCatchSwitch:
@@ -408,9 +410,7 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walk(*root, visit, visited)
 	case *value.Named:
 		walk(*root, visit, visited)
-	case *ir.ExceptionScope:
-		walk(*root, visit, visited)
-	case *ir.UnwindTarget:
+	case *ir.ExceptionPad:
 		walk(*root, visit, visited)
 	// Metadata.
 	case *metadata.Node:
@@ -516,10 +516,8 @@ func walk(root interface{}, visit func(n interface{}) bool, visited map[interfac
 		walkValue(root, visit, visited)
 	case value.Named:
 		walkValueNamed(root, visit, visited)
-	case ir.ExceptionScope:
+	case ir.ExceptionPad:
 		walkValue(root, visit, visited)
-	case ir.UnwindTarget:
-		walkUnwindTarget(root, visit, visited)
 	case metadata.SpecializedNode:
 		walkSpecializedMetadataNode(root, visit, visited)
 	default:
@@ -878,8 +876,8 @@ func walkInst(root ir.Instruction, visit func(n interface{}) bool, visited map[i
 		}
 	case *ir.InstSelect:
 		walk(&root.Cond, visit, visited)
-		walk(&root.X, visit, visited)
-		walk(&root.Y, visit, visited)
+		walk(&root.ValueTrue, visit, visited)
+		walk(&root.ValueFalse, visit, visited)
 	case *ir.InstCall:
 		walk(&root.Callee, visit, visited)
 		for i := range root.Args {
@@ -892,12 +890,12 @@ func walkInst(root ir.Instruction, visit func(n interface{}) bool, visited map[i
 			walk(&root.Clauses[i], visit, visited)
 		}
 	case *ir.InstCatchPad:
-		walk(&root.Scope, visit, visited)
+		walk(&root.CatchSwitch, visit, visited)
 		for i := range root.Args {
 			walk(&root.Args[i], visit, visited)
 		}
 	case *ir.InstCleanupPad:
-		walk(&root.Scope, visit, visited)
+		walk(&root.ParentPad, visit, visited)
 		for i := range root.Args {
 			walk(&root.Args[i], visit, visited)
 		}
@@ -938,24 +936,38 @@ func walkTerm(root ir.Terminator, visit func(n interface{}) bool, visited map[in
 		for i := range root.Args {
 			walk(&root.Args[i], visit, visited)
 		}
-		walk(&root.Normal, visit, visited)
-		walk(&root.Exception, visit, visited)
+		walk(&root.NormalRetTarget, visit, visited)
+		walk(&root.ExceptionRetTarget, visit, visited)
+		for i := range root.OperandBundles {
+			walk(&root.OperandBundles[i], visit, visited)
+		}
+	case *ir.TermCallBr:
+		walk(&root.Callee, visit, visited)
+		for i := range root.Args {
+			walk(&root.Args[i], visit, visited)
+		}
+		walk(&root.NormalRetTarget, visit, visited)
+		for i := range root.OtherRetTargets {
+			walk(&root.OtherRetTargets[i], visit, visited)
+		}
 		for i := range root.OperandBundles {
 			walk(&root.OperandBundles[i], visit, visited)
 		}
 	case *ir.TermResume:
 		walk(&root.X, visit, visited)
 	case *ir.TermCatchSwitch:
-		walk(&root.Scope, visit, visited)
+		walk(&root.ParentPad, visit, visited)
 		for i := range root.Handlers {
 			walk(&root.Handlers[i], visit, visited)
 		}
-		walk(&root.UnwindTarget, visit, visited)
+		if root.DefaultUnwindTarget != nil {
+			walk(&root.DefaultUnwindTarget, visit, visited)
+		}
 	case *ir.TermCatchRet:
-		walk(&root.From, visit, visited)
-		walk(&root.To, visit, visited)
+		walk(&root.CatchPad, visit, visited)
+		walk(&root.Target, visit, visited)
 	case *ir.TermCleanupRet:
-		walk(&root.From, visit, visited)
+		walk(&root.CleanupPad, visit, visited)
 		walk(&root.UnwindTarget, visit, visited)
 	case *ir.TermUnreachable:
 		// nothing to do
@@ -995,22 +1007,10 @@ func walkValueNamed(root value.Named, visit func(n interface{}) bool, visited ma
 		walk(root, visit, visited)
 	case *ir.TermInvoke:
 		walk(root, visit, visited)
+	case *ir.TermCallBr:
+		walk(root, visit, visited)
 	case *ir.TermCatchSwitch:
 		walk(root, visit, visited)
-	default:
-		panic(fmt.Errorf("support for LLVM IR AST node type %T not yet implemented", root))
-	}
-}
-
-// walkUnwindTarget walks the LLVM IR AST in depth-first order; invoking visit
-// recursively for each non-nil child of root. If visit returns false, the walk
-// is terminated. Visited tracks visited nodes.
-func walkUnwindTarget(root ir.UnwindTarget, visit func(n interface{}) bool, visited map[interface{}]bool) {
-	switch root := root.(type) {
-	case *ir.Block:
-		walk(root, visit, visited)
-	case ir.UnwindToCaller:
-		// nothing to do
 	default:
 		panic(fmt.Errorf("support for LLVM IR AST node type %T not yet implemented", root))
 	}
