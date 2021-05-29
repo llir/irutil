@@ -1,5 +1,5 @@
 module github.com/llir/irutil
 
-go 1.12
+go 1.16
 
-require github.com/llir/llvm v0.3.2
+require github.com/llir/llvm v0.3.3
