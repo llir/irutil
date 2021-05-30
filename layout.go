@@ -35,5 +35,5 @@ func (l DefaultLayout) SizeOf(typ types.Type) int {
 			return 128
 		}
 	}
-	panic(fmt.Sprintf("unimplemented size of this type, %v", typ))
+	panic(fmt.Errorf("support for size of on type %T not yet implemented", typ))
 }
