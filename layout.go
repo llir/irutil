@@ -6,15 +6,18 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
-// Layout provides configuration about metadata of compiler
+// Layout specifies how data is to be laid out in memory.
 type Layout interface {
+	// SizeOf returns the size of the given type in number of bits.
 	SizeOf(typ types.Type) int
 }
 
-// DefaultLayout provides a default implementation for size of type, you should create your owned implementation by embedding this structure, and call SizeOf by default
+// DefaultLayout provides a default implementation of data layout, which specifies the size of types and how data is to be laid out in memory.
+//
+// Users may embed this struct and implement the Sizeof method to provide custom handling of specific types and their size in number of bits.
 type DefaultLayout struct{}
 
-// SizeOf returns size of types.Type, value is how many bits
+// SizeOf returns the size of the given type in number of bits.
 func (l DefaultLayout) SizeOf(typ types.Type) int {
 	switch typ := typ.(type) {
 	case *types.IntType:
