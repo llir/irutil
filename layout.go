@@ -36,6 +36,8 @@ func (l DefaultLayout) SizeOf(typ types.Type) int {
 			return 80
 		case types.FloatKindPPC_FP128:
 			return 128
+		default:
+			panic(fmt.Errorf("support for size of on floating-point type of kind %v not yet implemented", typ.Kind))
 		}
 	}
 	panic(fmt.Errorf("support for size of on type %T not yet implemented", typ))
