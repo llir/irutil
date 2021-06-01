@@ -1,7 +1,7 @@
 package irutil
 
 import (
-	"math/big"
+	"log"
 
 	"github.com/llir/llvm/ir/constant"
 )
@@ -15,7 +15,7 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Int)
 		if ok && ok2 {
 			z := constant.NewInt(x.Typ, 0)
-			z.X = (&big.Int{}).Add(x.X, y.X)
+			z.X = z.X.Add(x.X, y.X)
 			return z
 		}
 		return c
@@ -24,7 +24,7 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Int)
 		if ok && ok2 {
 			z := constant.NewInt(x.Typ, 0)
-			z.X = (&big.Int{}).Sub(x.X, y.X)
+			z.X = z.X.Sub(x.X, y.X)
 			return z
 		}
 		return c
@@ -33,16 +33,17 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Int)
 		if ok && ok2 {
 			z := constant.NewInt(x.Typ, 0)
-			z.X = (&big.Int{}).Mul(x.X, y.X)
+			z.X = z.X.Mul(x.X, y.X)
 			return z
 		}
 		return c
 	case *constant.ExprSDiv:
+		// TODO: if we need to handle signed division differently from unsigned division.
 		x, ok := Simplify(c.X).(*constant.Int)
 		y, ok2 := Simplify(c.Y).(*constant.Int)
 		if ok && ok2 {
 			z := constant.NewInt(x.Typ, 0)
-			z.X = (&big.Int{}).Div(x.X, y.X)
+			z.X = z.X.Div(x.X, y.X)
 			return z
 		}
 		return c
@@ -51,7 +52,7 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Int)
 		if ok && ok2 {
 			z := constant.NewInt(x.Typ, 0)
-			z.X = (&big.Int{}).Div(x.X, y.X)
+			z.X = z.X.Div(x.X, y.X)
 			return z
 		}
 		return c
@@ -60,7 +61,7 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Float)
 		if ok && ok2 {
 			z := constant.NewFloat(x.Typ, 0)
-			z.X = (&big.Float{}).Add(x.X, y.X)
+			z.X = z.X.Add(x.X, y.X)
 			return z
 		}
 		return c
@@ -69,7 +70,7 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Float)
 		if ok && ok2 {
 			z := constant.NewFloat(x.Typ, 0)
-			z.X = (&big.Float{}).Sub(x.X, y.X)
+			z.X = z.X.Sub(x.X, y.X)
 			return z
 		}
 		return c
@@ -78,11 +79,12 @@ func Simplify(c constant.Constant) constant.Constant {
 		y, ok2 := Simplify(c.Y).(*constant.Float)
 		if ok && ok2 {
 			z := constant.NewFloat(x.Typ, 0)
-			z.X = (&big.Float{}).Mul(x.X, y.X)
+			z.X = z.X.Mul(x.X, y.X)
 			return z
 		}
 		return c
 	default:
+		log.Printf("support for simplifying constant expression %T not yet implemented; returning original constant expression", c)
 		return c
 	}
 }
