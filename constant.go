@@ -17,3 +17,9 @@ func NewZero(typ types.Type) value.Value {
 		return constant.NewZeroInitializer(typ)
 	}
 }
+
+// NewCString returns a new NULL-terminated character array constant based on
+// the given UTF-8 string contents.
+func NewCString(s string) *constant.CharArray {
+	return constant.NewCharArrayFromString(s + "\x00")
+}
