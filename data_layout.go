@@ -9,46 +9,46 @@ import (
 // DataLayout is a structural representation of the datalayout
 // string from https://llvm.org/docs/LangRef.html#data-layout
 type DataLayout struct {
-	isBigEndian               bool                                   // default - True
-	naturalStackAlignment     uint64                                 // bits in multiple of 8, default: 0
-	programMemoryAddressSpace uint64                                 // default - 0
-	globalVarAddressSpace     uint64                                 // default - 0
-	allocaAddressSpace        uint64                                 // default - 0
-	ptrSizeAlign              map[uint64]*PointerSizeAlignment       // Key is addressspace
-	intSizeAlign              map[uint64]*IntegerSizeAlignment       // Key is size
-	vecSizeAlign              map[uint64]*VectorSizeAlignment        // Key is size
-	floatSizeAlign            map[uint64]*FloatingPointSizeAlignment // Key is size
-	aggAlign                  *AggregateAlignment                    // default - 0:64
-	funcPtrAlign              *FunctionPointerAlignment              // default - Not specified in LLVM Ref doc
-	mangling                  ManglingStyle                          // depends on os - "e" for linux, "o" for mac
-	nativeIntBitWidths        []uint64                               // default - depends on arch "8:16:32:64" for x86-64
-	nonIntegralPointerTypes   []string                               // Unsure of the datatype, so leaving it as string to accommodate anything.
+	IsBigEndian                bool                                   // default - True
+	NaturalStackAlignment      uint64                                 // bits in multiple of 8, default: 0
+	ProgramMemoryAddressSpace  uint64                                 // default - 0
+	GlobalVarAddressSpace      uint64                                 // default - 0
+	AllocaAddressSpace         uint64                                 // default - 0
+	PointerSizeAlignment       map[uint64]*PointerSizeAlignment       // Key is addressspace
+	IntegerSizeAlignment       map[uint64]*IntegerSizeAlignment       // Key is size
+	VectorSizeAlignment        map[uint64]*VectorSizeAlignment        // Key is size
+	FloatingPointSizeAlignment map[uint64]*FloatingPointSizeAlignment // Key is size
+	AggregateAlignment         *AggregateAlignment                    // default - 0:64
+	FunctionPointerAlignment   *FunctionPointerAlignment              // default - Not specified in LLVM Ref doc
+	Mangling                   ManglingStyle                          // depends on os - "e" for linux, "o" for mac
+	NativeIntBitWidths         []uint64                               // default - depends on arch "8:16:32:64" for x86-64
+	NonIntegralPointerTypes    []string                               // Unsure of the datatype, so leaving it as string to accommodate anything.
 }
 
 // NewDataLayout returns an instance of DataLayout with default values
 // taken from https://llvm.org/docs/LangRef.html#data-layout
 func NewDataLayout(os string, arch string) *DataLayout {
 	dl := &DataLayout{
-		isBigEndian:               true,
-		naturalStackAlignment:     0,
-		programMemoryAddressSpace: 0,
-		globalVarAddressSpace:     0,
-		allocaAddressSpace:        0,
-		ptrSizeAlign:              getDefaultPtrAligns(),
-		intSizeAlign:              getDefaultIntAligns(),
-		vecSizeAlign:              getDefaultVectorAligns(),
-		floatSizeAlign:            getDefaultFloatAligns(),
-		aggAlign:                  NewAggregateAlignment(0, 64),
+		IsBigEndian:                true,
+		NaturalStackAlignment:      0,
+		ProgramMemoryAddressSpace:  0,
+		GlobalVarAddressSpace:      0,
+		AllocaAddressSpace:         0,
+		PointerSizeAlignment:       getDefaultPtrAligns(),
+		IntegerSizeAlignment:       getDefaultIntAligns(),
+		VectorSizeAlignment:        getDefaultVectorAligns(),
+		FloatingPointSizeAlignment: getDefaultFloatAligns(),
+		AggregateAlignment:         NewAggregateAlignment(0, 64),
 	}
 	switch arch {
 	case "x86-64":
-		dl.nativeIntBitWidths = []uint64{8, 16, 32, 64}
+		dl.NativeIntBitWidths = []uint64{8, 16, 32, 64}
 	}
 
 	if os == "linux" {
-		dl.mangling = ELF
+		dl.Mangling = ELF
 	} else if strings.HasPrefix(os, "darwin") || strings.HasPrefix(os, "macosx") {
-		dl.mangling = MachO
+		dl.Mangling = MachO
 	}
 	return dl
 }
@@ -62,17 +62,17 @@ func NewDataLayoutFromString(layoutString, os, arch string) *DataLayout {
 	specs := strings.Split(layoutString, "-")
 	for _, spec := range specs {
 		if spec == "e" {
-			dl.isBigEndian = false
+			dl.IsBigEndian = false
 		} else if spec == "E" {
-			dl.isBigEndian = true
+			dl.IsBigEndian = true
 		} else if strings.HasPrefix(spec, "S") {
-			dl.naturalStackAlignment = getUInt64(strings.TrimPrefix(spec, "S"))
+			dl.NaturalStackAlignment = getUInt64(strings.TrimPrefix(spec, "S"))
 		} else if strings.HasPrefix(spec, "P") {
-			dl.programMemoryAddressSpace = getUInt64(strings.TrimPrefix(spec, "P"))
+			dl.ProgramMemoryAddressSpace = getUInt64(strings.TrimPrefix(spec, "P"))
 		} else if strings.HasPrefix(spec, "G") {
-			dl.globalVarAddressSpace = getUInt64(strings.TrimPrefix(spec, "G"))
+			dl.GlobalVarAddressSpace = getUInt64(strings.TrimPrefix(spec, "G"))
 		} else if strings.HasPrefix(spec, "A") {
-			dl.allocaAddressSpace = getUInt64(strings.TrimPrefix(spec, "A"))
+			dl.AllocaAddressSpace = getUInt64(strings.TrimPrefix(spec, "A"))
 		} else if strings.HasPrefix(spec, "p") {
 			addPtrSizeAlignFromString(spec, dl)
 		} else if strings.HasPrefix(spec, "i") {
@@ -86,11 +86,11 @@ func NewDataLayoutFromString(layoutString, os, arch string) *DataLayout {
 		} else if strings.HasPrefix(spec, "F") {
 			addFuncPtrAlignFromString(spec, dl)
 		} else if strings.HasPrefix(spec, "m") {
-			dl.mangling = ManglingStyle(strings.Split(spec, ":")[1])
+			dl.Mangling = ManglingStyle(strings.Split(spec, ":")[1])
 		} else if strings.HasPrefix(spec, "n") {
 			addNativeIntBitWidths(spec, dl)
 		} else if strings.HasPrefix(spec, "ni") {
-			dl.nonIntegralPointerTypes = strings.Split(strings.TrimPrefix(spec, "ni"), ":")
+			dl.NonIntegralPointerTypes = strings.Split(strings.TrimPrefix(spec, "ni"), ":")
 		}
 	}
 	return dl
@@ -113,7 +113,7 @@ func addPtrSizeAlignFromString(spec string, dl *DataLayout) {
 	if ptrValsLen == 5 {
 		ind = getUInt64(ptrVals[4])
 	}
-	dl.ptrSizeAlign[ptrAddSpace] = NewPointerSizeAlignment(ptrAddSpace, size, abi, pref, ind)
+	dl.PointerSizeAlignment[ptrAddSpace] = NewPointerSizeAlignment(ptrAddSpace, size, abi, pref, ind)
 }
 
 func addIntSizeAlignFromString(spec string, dl *DataLayout) {
@@ -125,7 +125,7 @@ func addIntSizeAlignFromString(spec string, dl *DataLayout) {
 	if intValsLen == 3 {
 		pref = getUInt64(intVals[2])
 	}
-	dl.intSizeAlign[size] = NewIntegerSizeAlignment(size, abi, pref)
+	dl.IntegerSizeAlignment[size] = NewIntegerSizeAlignment(size, abi, pref)
 }
 
 func addVectorSizeAlignFromString(spec string, dl *DataLayout) {
@@ -137,7 +137,7 @@ func addVectorSizeAlignFromString(spec string, dl *DataLayout) {
 	if vectorValsLen == 3 {
 		pref = getUInt64(vectorVals[2])
 	}
-	dl.vecSizeAlign[size] = NewVectorSizeAlignment(size, abi, pref)
+	dl.VectorSizeAlignment[size] = NewVectorSizeAlignment(size, abi, pref)
 }
 
 func addFloatSizeAlignFromString(spec string, dl *DataLayout) {
@@ -149,7 +149,7 @@ func addFloatSizeAlignFromString(spec string, dl *DataLayout) {
 	if floatValsLen == 3 {
 		pref = getUInt64(floatVals[2])
 	}
-	dl.floatSizeAlign[size] = NewFloatingPointSizeAlignment(size, abi, pref)
+	dl.FloatingPointSizeAlignment[size] = NewFloatingPointSizeAlignment(size, abi, pref)
 }
 
 func addAggAlignFromString(spec string, dl *DataLayout) {
@@ -160,7 +160,7 @@ func addAggAlignFromString(spec string, dl *DataLayout) {
 	if aggValsLen == 3 {
 		pref = getUInt64(aggVals[2])
 	}
-	dl.aggAlign = NewAggregateAlignment(abi, pref)
+	dl.AggregateAlignment = NewAggregateAlignment(abi, pref)
 }
 
 func addFuncPtrAlignFromString(spec string, dl *DataLayout) {
@@ -174,7 +174,7 @@ func addFuncPtrAlignFromString(spec string, dl *DataLayout) {
 		panic("Invalid Function pointer alignment type, possible options are \"i\", \"n\".")
 	}
 	abi := getUInt64(strings.TrimPrefix(val, typ))
-	dl.funcPtrAlign = NewFunctionPointerAlignment(typ == "i", abi)
+	dl.FunctionPointerAlignment = NewFunctionPointerAlignment(typ == "i", abi)
 }
 
 func addNativeIntBitWidths(spec string, dl *DataLayout) {
@@ -183,7 +183,7 @@ func addNativeIntBitWidths(spec string, dl *DataLayout) {
 	for i, width := range widthContents {
 		widths[i] = getUInt64(width)
 	}
-	dl.nativeIntBitWidths = widths
+	dl.NativeIntBitWidths = widths
 }
 
 func getUInt64(str string) uint64 {
@@ -194,139 +194,122 @@ func getUInt64(str string) uint64 {
 	return val
 }
 
-func (dl *DataLayout) SetIsBigEndian(isBigEndian bool) {
-	dl.isBigEndian = isBigEndian
-}
-
-func (dl *DataLayout) SetNaturalStackAlignment(al uint64) {
-	dl.naturalStackAlignment = al
-}
-
-func (dl *DataLayout) SetProgramMemoryAddressSpace(as uint64) {
-	dl.programMemoryAddressSpace = as
-}
-
-func (dl *DataLayout) SetGlobalVarAddressSpace(as uint64) {
-	dl.globalVarAddressSpace = as
-}
-
-func (dl *DataLayout) SetAllocaAddressSpace(as uint64) {
-	dl.allocaAddressSpace = as
-}
-
-func (dl *DataLayout) AddPointerSizeAlignment(instance *PointerSizeAlignment) {
-	dl.ptrSizeAlign[instance.addressSpace] = instance
-}
-
-func (dl *DataLayout) AddIntegerSizeAlignment(instance *IntegerSizeAlignment) {
-	dl.intSizeAlign[instance.size] = instance
-}
-
-func (dl *DataLayout) AddVectorSizeAlignment(instance *VectorSizeAlignment) {
-	dl.vecSizeAlign[instance.size] = instance
-}
-
-func (dl *DataLayout) AddFloatingPointSizeAlignment(instance *FloatingPointSizeAlignment) {
-	dl.floatSizeAlign[instance.size] = instance
-}
-
-func (dl *DataLayout) SetAggregateAlignment(instance *AggregateAlignment) {
-	dl.aggAlign = instance
-}
-
-func (dl *DataLayout) SetFunctionPointerAlignment(instance *FunctionPointerAlignment) {
-	dl.funcPtrAlign = instance
-}
-
-func (dl *DataLayout) SetManglingStyle(style ManglingStyle) {
-	dl.mangling = style
-}
-
-func (dl *DataLayout) SetNativeIntBitWidths(bitWidths []uint64) {
-	dl.nativeIntBitWidths = bitWidths
-}
-
-func (dl *DataLayout) GetLayoutString() string {
-	layout := ""
-	if dl.isBigEndian {
-		layout += "E"
+func (dl *DataLayout) LLString() string {
+	layout := &strings.Builder{}
+	if dl.IsBigEndian {
+		layout.WriteString("E")
 	} else {
-		layout += "e"
+		layout.WriteString("e")
 	}
-	if dl.naturalStackAlignment != 0 {
-		layout += "-S" + fmt.Sprint(dl.naturalStackAlignment)
+	if dl.NaturalStackAlignment != 0 {
+		layout.WriteString("-S")
+		fmt.Fprintf(layout, "%d", dl.NaturalStackAlignment)
 	}
-	if dl.programMemoryAddressSpace != 0 {
-		layout += "-P" + fmt.Sprint(dl.programMemoryAddressSpace)
+	if dl.ProgramMemoryAddressSpace != 0 {
+		layout.WriteString("-P")
+		fmt.Fprintf(layout, "%d", dl.ProgramMemoryAddressSpace)
 	}
-	if dl.globalVarAddressSpace != 0 {
-		layout += "-G" + fmt.Sprint(dl.globalVarAddressSpace)
+	if dl.GlobalVarAddressSpace != 0 {
+		layout.WriteString("-G")
+		fmt.Fprintf(layout, "%d", dl.GlobalVarAddressSpace)
 	}
-	if dl.allocaAddressSpace != 0 {
-		layout += "-A" + fmt.Sprint(dl.allocaAddressSpace)
+	if dl.AllocaAddressSpace != 0 {
+		layout.WriteString("-A")
+		fmt.Fprintf(layout, "%d", dl.AllocaAddressSpace)
 	}
-	if len(dl.ptrSizeAlign) > 0 {
-		for k, v := range dl.ptrSizeAlign {
+	if len(dl.PointerSizeAlignment) > 0 {
+		for k, v := range dl.PointerSizeAlignment {
 			if k == 0 {
-				layout += "-p"
+				layout.WriteString("-p")
 			} else {
-				layout += "-p" + fmt.Sprint(k)
+				layout.WriteString("-p")
+				fmt.Fprintf(layout, "%d", k)
 			}
-			layout += ":" + fmt.Sprint(v.size) + ":" + fmt.Sprint(v.abiAlignment) + ":" +
-				fmt.Sprint(v.preferredAlignment) + ":" + fmt.Sprint(v.addressCalculationIndex)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.Size)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.ABIAlignment)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.PreferredAlignment)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.AddressCalculationIndex)
 		}
 	}
-	if len(dl.intSizeAlign) > 0 {
-		for k, v := range dl.intSizeAlign {
-			layout += "-i" + fmt.Sprint(k) + ":" + fmt.Sprint(v.abiAlignment) + ":" + fmt.Sprint(v.preferredAlignment)
+	if len(dl.IntegerSizeAlignment) > 0 {
+		for k, v := range dl.IntegerSizeAlignment {
+			layout.WriteString("-i")
+			fmt.Fprintf(layout, "%d", k)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.ABIAlignment)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.PreferredAlignment)
 		}
 	}
-	if len(dl.vecSizeAlign) > 0 {
-		for k, v := range dl.vecSizeAlign {
-			layout += "-v" + fmt.Sprint(k) + ":" + fmt.Sprint(v.abiAlignment) + ":" + fmt.Sprint(v.preferredAlignment)
+	if len(dl.VectorSizeAlignment) > 0 {
+		for k, v := range dl.VectorSizeAlignment {
+			layout.WriteString("-v")
+			fmt.Fprintf(layout, "%d", k)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.ABIAlignment)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.PreferredAlignment)
 		}
 	}
-	if len(dl.floatSizeAlign) > 0 {
-		for k, v := range dl.floatSizeAlign {
-			layout += "-f" + fmt.Sprint(k) + ":" + fmt.Sprint(v.abiAlignment) + ":" + fmt.Sprint(v.preferredAlignment)
+	if len(dl.FloatingPointSizeAlignment) > 0 {
+		for k, v := range dl.FloatingPointSizeAlignment {
+			layout.WriteString("-f")
+			fmt.Fprintf(layout, "%d", k)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.ABIAlignment)
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", v.PreferredAlignment)
 		}
 	}
-	if dl.aggAlign != nil {
-		layout += "-a:" + fmt.Sprint(dl.aggAlign.abiAlignment) + ":" + fmt.Sprint(dl.aggAlign.preferredAlignment)
+	if dl.AggregateAlignment != nil {
+		layout.WriteString("-a:")
+		fmt.Fprintf(layout, "%d", dl.AggregateAlignment.ABIAlignment)
+		layout.WriteString(":")
+		fmt.Fprintf(layout, "%d", dl.AggregateAlignment.PreferredAlignment)
 	}
-	if dl.funcPtrAlign != nil {
-		if dl.funcPtrAlign.isIndependant {
-			layout += "-Fi" + fmt.Sprint(dl.funcPtrAlign.abiAlignment)
+	if dl.FunctionPointerAlignment != nil {
+		if dl.FunctionPointerAlignment.IsIndependant {
+			layout.WriteString("-Fi")
+			fmt.Fprintf(layout, "%d", dl.FunctionPointerAlignment.ABIAlignment)
 		} else {
-			layout += "-Fn" + fmt.Sprint(dl.funcPtrAlign.abiAlignment)
+			layout.WriteString("-Fn")
+			fmt.Fprintf(layout, "%d", dl.FunctionPointerAlignment.ABIAlignment)
 		}
 	}
-	layout += "-m:" + string(dl.mangling)
-	if bitWidths := len(dl.nativeIntBitWidths); bitWidths > 0 {
-		layout += "-n" + fmt.Sprint(dl.nativeIntBitWidths[0])
+	layout.WriteString("-m:")
+	layout.WriteString(string(dl.Mangling))
+	if bitWidths := len(dl.NativeIntBitWidths); bitWidths > 0 {
+		layout.WriteString("-n")
+		fmt.Fprintf(layout, "%d", dl.NativeIntBitWidths[0])
 		for i := 1; i < bitWidths; i++ {
-			layout += ":" + fmt.Sprint(dl.nativeIntBitWidths[i])
+			layout.WriteString(":")
+			fmt.Fprintf(layout, "%d", dl.NativeIntBitWidths[i])
 		}
 	}
-	if len(dl.nonIntegralPointerTypes) > 0 {
-		layout += "-ni"
-		for _, v := range dl.nonIntegralPointerTypes {
-			layout += ":" + fmt.Sprint(v)
+	if len(dl.NonIntegralPointerTypes) > 0 {
+		layout.WriteString("-ni")
+		for _, v := range dl.NonIntegralPointerTypes {
+			layout.WriteString(":")
+			layout.WriteString(v)
 		}
 	}
-	return layout
+	return layout.String()
 }
 
 type PointerSizeAlignment struct { // All sizes are in bits.
-	addressSpace            uint64
-	size                    uint64
-	abiAlignment            uint64
-	preferredAlignment      uint64 // optional and defaults to abi
-	addressCalculationIndex uint64 // default 0
+	AddressSpace            uint64
+	Size                    uint64
+	ABIAlignment            uint64
+	PreferredAlignment      uint64 // optional and defaults to abi
+	AddressCalculationIndex uint64 // default 0
 }
 
 func NewPointerSizeAlignment(addSp, size, abiAl, prefAl, addCalInd uint64) *PointerSizeAlignment {
-	return &PointerSizeAlignment{addressSpace: addSp, size: size, abiAlignment: abiAl, preferredAlignment: prefAl, addressCalculationIndex: addCalInd}
+	return &PointerSizeAlignment{AddressSpace: addSp, Size: size, ABIAlignment: abiAl, PreferredAlignment: prefAl, AddressCalculationIndex: addCalInd}
 }
 
 func getDefaultPtrAligns() map[uint64]*PointerSizeAlignment {
@@ -336,13 +319,13 @@ func getDefaultPtrAligns() map[uint64]*PointerSizeAlignment {
 }
 
 type IntegerSizeAlignment struct { // All sizes are in bits.
-	size               uint64
-	abiAlignment       uint64
-	preferredAlignment uint64 // optional and defaults to abi
+	Size               uint64
+	ABIAlignment       uint64
+	PreferredAlignment uint64 // optional and defaults to abi
 }
 
 func NewIntegerSizeAlignment(size, abiAl, prefAl uint64) *IntegerSizeAlignment {
-	return &IntegerSizeAlignment{size: size, abiAlignment: abiAl, preferredAlignment: prefAl}
+	return &IntegerSizeAlignment{Size: size, ABIAlignment: abiAl, PreferredAlignment: prefAl}
 }
 
 func getDefaultIntAligns() map[uint64]*IntegerSizeAlignment {
@@ -356,13 +339,13 @@ func getDefaultIntAligns() map[uint64]*IntegerSizeAlignment {
 }
 
 type VectorSizeAlignment struct { // All sizes are in bits.
-	size               uint64
-	abiAlignment       uint64
-	preferredAlignment uint64 // optional and defaults to abi
+	Size               uint64
+	ABIAlignment       uint64
+	PreferredAlignment uint64 // optional and defaults to abi
 }
 
 func NewVectorSizeAlignment(size, abiAl, prefAl uint64) *VectorSizeAlignment {
-	return &VectorSizeAlignment{size: size, abiAlignment: abiAl, preferredAlignment: prefAl}
+	return &VectorSizeAlignment{Size: size, ABIAlignment: abiAl, PreferredAlignment: prefAl}
 }
 
 func getDefaultVectorAligns() map[uint64]*VectorSizeAlignment {
@@ -373,13 +356,13 @@ func getDefaultVectorAligns() map[uint64]*VectorSizeAlignment {
 }
 
 type FloatingPointSizeAlignment struct { // All sizes are in bits.
-	size               uint64
-	abiAlignment       uint64
-	preferredAlignment uint64 // optional and defaults to abi
+	Size               uint64
+	ABIAlignment       uint64
+	PreferredAlignment uint64 // optional and defaults to abi
 }
 
 func NewFloatingPointSizeAlignment(size, abiAl, prefAl uint64) *FloatingPointSizeAlignment {
-	return &FloatingPointSizeAlignment{size: size, abiAlignment: abiAl, preferredAlignment: prefAl}
+	return &FloatingPointSizeAlignment{Size: size, ABIAlignment: abiAl, PreferredAlignment: prefAl}
 }
 
 func getDefaultFloatAligns() map[uint64]*FloatingPointSizeAlignment {
@@ -392,21 +375,21 @@ func getDefaultFloatAligns() map[uint64]*FloatingPointSizeAlignment {
 }
 
 type AggregateAlignment struct {
-	abiAlignment       uint64
-	preferredAlignment uint64 // optional and defaults to abi
+	ABIAlignment       uint64
+	PreferredAlignment uint64 // optional and defaults to abi
 }
 
 func NewAggregateAlignment(abiAl, prefAl uint64) *AggregateAlignment {
-	return &AggregateAlignment{abiAlignment: abiAl, preferredAlignment: prefAl}
+	return &AggregateAlignment{ABIAlignment: abiAl, PreferredAlignment: prefAl}
 }
 
 type FunctionPointerAlignment struct {
-	isIndependant bool
-	abiAlignment  uint64
+	IsIndependant bool
+	ABIAlignment  uint64
 }
 
 func NewFunctionPointerAlignment(isInd bool, abiAl uint64) *FunctionPointerAlignment {
-	return &FunctionPointerAlignment{isIndependant: isInd, abiAlignment: abiAl}
+	return &FunctionPointerAlignment{IsIndependant: isInd, ABIAlignment: abiAl}
 }
 
 type ManglingStyle string
