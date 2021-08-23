@@ -57,8 +57,9 @@ func NewDataLayout(os string, arch string) *DataLayout {
 // Default values whereever applicable will be added if options are ommitted.
 //
 // This API expects the string to be valid as per LLVM spec, so there aren't many validations.
-func NewDataLayoutFromString(layoutString, os, arch string) *DataLayout {
+func NewDataLayoutFromString(layoutString, os, arch string) (*DataLayout, error) {
 	dl := NewDataLayout(os, arch)
+	var err error
 	specs := strings.Split(layoutString, "-")
 	for _, spec := range specs {
 		if spec == "e" {
@@ -66,13 +67,25 @@ func NewDataLayoutFromString(layoutString, os, arch string) *DataLayout {
 		} else if spec == "E" {
 			dl.IsBigEndian = true
 		} else if strings.HasPrefix(spec, "S") {
-			dl.NaturalStackAlignment = getUInt64(strings.TrimPrefix(spec, "S"))
+			dl.NaturalStackAlignment, err = strconv.ParseUint(strings.TrimPrefix(spec, "S"), 10, 64)
+			if err != nil {
+				return nil, err
+			}
 		} else if strings.HasPrefix(spec, "P") {
-			dl.ProgramMemoryAddressSpace = getUInt64(strings.TrimPrefix(spec, "P"))
+			dl.ProgramMemoryAddressSpace, err = strconv.ParseUint(strings.TrimPrefix(spec, "P"), 10, 64)
+			if err != nil {
+				return nil, err
+			}
 		} else if strings.HasPrefix(spec, "G") {
-			dl.GlobalVarAddressSpace = getUInt64(strings.TrimPrefix(spec, "G"))
+			dl.GlobalVarAddressSpace, err = strconv.ParseUint(strings.TrimPrefix(spec, "G"), 10, 64)
+			if err != nil {
+				return nil, err
+			}
 		} else if strings.HasPrefix(spec, "A") {
-			dl.AllocaAddressSpace = getUInt64(strings.TrimPrefix(spec, "A"))
+			dl.AllocaAddressSpace, err = strconv.ParseUint(strings.TrimPrefix(spec, "A"), 10, 64)
+			if err != nil {
+				return nil, err
+			}
 		} else if strings.HasPrefix(spec, "p") {
 			addPtrSizeAlignFromString(spec, dl)
 		} else if strings.HasPrefix(spec, "i") {
@@ -86,84 +99,161 @@ func NewDataLayoutFromString(layoutString, os, arch string) *DataLayout {
 		} else if strings.HasPrefix(spec, "F") {
 			addFuncPtrAlignFromString(spec, dl)
 		} else if strings.HasPrefix(spec, "m") {
-			dl.Mangling = ManglingStyle(strings.Split(spec, ":")[1])
+			manglingVals := strings.Split(spec, ":")
+			if len(manglingVals) != 2 {
+				return nil, fmt.Errorf(`expecting 1 value separated by ":", but got %q`, spec)
+			}
+			dl.Mangling = ManglingStyle(manglingVals[1])
 		} else if strings.HasPrefix(spec, "n") {
 			addNativeIntBitWidths(spec, dl)
 		} else if strings.HasPrefix(spec, "ni") {
-			dl.NonIntegralPointerTypes = strings.Split(strings.TrimPrefix(spec, "ni"), ":")
+			niValues := strings.Split(strings.TrimPrefix(spec, "ni"), ":")
+			if len(niValues) == 0 {
+				return nil, fmt.Errorf(`expecting atleast 1 value separated by ":", got %q`, spec)
+			}
+			dl.NonIntegralPointerTypes = niValues
 		}
 	}
-	return dl
+	return dl, nil
 }
 
-func addPtrSizeAlignFromString(spec string, dl *DataLayout) {
+func addPtrSizeAlignFromString(spec string, dl *DataLayout) error {
 	ptrVals := strings.Split(spec, ":")
 	ptrValsLen := len(ptrVals)
+	if len(ptrVals) < 3 {
+		return fmt.Errorf(`expecting atleast 3 values separated by ":", got %q`, spec)
+	}
 	ptrAddSpace := uint64(0)
+	var err error
 	if len(ptrVals[0]) > 1 {
-		ptrAddSpace = getUInt64(strings.TrimPrefix(ptrVals[0], "p"))
+		ptrAddSpace, err = strconv.ParseUint(strings.TrimPrefix(ptrVals[0], "p"), 10, 64)
+		if err != nil {
+			return err
+		}
 	}
-	size := getUInt64(ptrVals[1])
-	abi := getUInt64(ptrVals[2])
+	size, err := strconv.ParseUint(ptrVals[1], 10, 64)
+	if err != nil {
+		return err
+	}
+	abi, err := strconv.ParseUint(ptrVals[2], 10, 64)
+	if err != nil {
+		return err
+	}
 	pref := abi
-	if ptrValsLen > 3 {
-		pref = getUInt64(ptrVals[3])
-	}
 	ind := size
-	if ptrValsLen == 5 {
-		ind = getUInt64(ptrVals[4])
+	if ptrValsLen > 3 {
+		pref, err = strconv.ParseUint(ptrVals[3], 10, 64)
+		if err != nil {
+			return err
+		}
+		if ptrValsLen == 5 {
+			ind, err = strconv.ParseUint(ptrVals[4], 10, 64)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	dl.PointerSizeAlignment[ptrAddSpace] = NewPointerSizeAlignment(ptrAddSpace, size, abi, pref, ind)
+	return nil
 }
 
-func addIntSizeAlignFromString(spec string, dl *DataLayout) {
+func addIntSizeAlignFromString(spec string, dl *DataLayout) error {
 	intVals := strings.Split(spec, ":")
 	intValsLen := len(intVals)
-	size := getUInt64(strings.TrimPrefix(intVals[0], "i"))
-	abi := getUInt64(intVals[1])
+	if intValsLen < 2 {
+		return fmt.Errorf(`expecting atleast 2 values separated by ":", got %q`, spec)
+	}
+	size, err := strconv.ParseUint(strings.TrimPrefix(intVals[0], "i"), 10, 64)
+	if err != nil {
+		return err
+	}
+	abi, err := strconv.ParseUint(intVals[1], 10, 64)
+	if err != nil {
+		return err
+	}
 	pref := abi
 	if intValsLen == 3 {
-		pref = getUInt64(intVals[2])
+		pref, err = strconv.ParseUint(intVals[2], 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 	dl.IntegerSizeAlignment[size] = NewIntegerSizeAlignment(size, abi, pref)
+	return nil
 }
 
-func addVectorSizeAlignFromString(spec string, dl *DataLayout) {
+func addVectorSizeAlignFromString(spec string, dl *DataLayout) error {
 	vectorVals := strings.Split(spec, ":")
 	vectorValsLen := len(vectorVals)
-	size := getUInt64(strings.TrimPrefix(vectorVals[0], "v"))
-	abi := getUInt64(vectorVals[1])
+	if vectorValsLen < 2 {
+		return fmt.Errorf(`expecting atleast 2 values separated by ":", got %q`, spec)
+	}
+	size, err := strconv.ParseUint(strings.TrimPrefix(vectorVals[0], "v"), 10, 64)
+	if err != nil {
+		return err
+	}
+	abi, err := strconv.ParseUint(vectorVals[1], 10, 64)
+	if err != nil {
+		return err
+	}
 	pref := abi
 	if vectorValsLen == 3 {
-		pref = getUInt64(vectorVals[2])
+		pref, err = strconv.ParseUint(vectorVals[2], 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 	dl.VectorSizeAlignment[size] = NewVectorSizeAlignment(size, abi, pref)
+	return nil
 }
 
-func addFloatSizeAlignFromString(spec string, dl *DataLayout) {
+func addFloatSizeAlignFromString(spec string, dl *DataLayout) error {
 	floatVals := strings.Split(spec, ":")
 	floatValsLen := len(floatVals)
-	size := getUInt64(strings.TrimPrefix(floatVals[0], "f"))
-	abi := getUInt64(floatVals[1])
+	if floatValsLen < 2 {
+		return fmt.Errorf(`expecting atleast 2 values separated by ":", got %q`, spec)
+	}
+	size, err := strconv.ParseUint(strings.TrimPrefix(floatVals[0], "f"), 10, 64)
+	if err != nil {
+		return err
+	}
+	abi, err := strconv.ParseUint(floatVals[1], 10, 64)
+	if err != nil {
+		return err
+	}
 	pref := abi
 	if floatValsLen == 3 {
-		pref = getUInt64(floatVals[2])
+		pref, err = strconv.ParseUint(floatVals[2], 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 	dl.FloatingPointSizeAlignment[size] = NewFloatingPointSizeAlignment(size, abi, pref)
+	return nil
 }
 
-func addAggAlignFromString(spec string, dl *DataLayout) {
+func addAggAlignFromString(spec string, dl *DataLayout) error {
 	aggVals := strings.Split(spec, ":")
 	aggValsLen := len(aggVals)
-	abi := getUInt64(aggVals[1])
+	if aggValsLen < 2 {
+		return fmt.Errorf(`expecting atleast 2 values separated by ":", got %q`, spec)
+	}
+	abi, err := strconv.ParseUint(aggVals[1], 10, 64)
+	if err != nil {
+		return err
+	}
 	pref := abi
 	if aggValsLen == 3 {
-		pref = getUInt64(aggVals[2])
+		pref, err = strconv.ParseUint(aggVals[2], 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 	dl.AggregateAlignment = NewAggregateAlignment(abi, pref)
+	return nil
 }
 
-func addFuncPtrAlignFromString(spec string, dl *DataLayout) {
+func addFuncPtrAlignFromString(spec string, dl *DataLayout) error {
 	val := strings.TrimPrefix(spec, "F")
 	var typ string
 	if strings.HasPrefix(val, "i") {
@@ -173,25 +263,27 @@ func addFuncPtrAlignFromString(spec string, dl *DataLayout) {
 	} else {
 		panic("Invalid Function pointer alignment type, possible options are \"i\", \"n\".")
 	}
-	abi := getUInt64(strings.TrimPrefix(val, typ))
+	abi, err := strconv.ParseUint(strings.TrimPrefix(val, typ), 10, 64)
+	if err != nil {
+		return err
+	}
 	dl.FunctionPointerAlignment = NewFunctionPointerAlignment(typ == "i", abi)
+	return nil
 }
 
-func addNativeIntBitWidths(spec string, dl *DataLayout) {
+func addNativeIntBitWidths(spec string, dl *DataLayout) error {
+	// No length validation for widthContents here since "n32"
+	// like values are valid and 32 is validated while parsing.
 	widthContents := strings.Split(strings.TrimPrefix(spec, "n"), ":")
 	widths := make([]uint64, len(widthContents))
+	var err error
 	for i, width := range widthContents {
-		widths[i] = getUInt64(width)
+		if widths[i], err = strconv.ParseUint(width, 10, 64); err != nil {
+			return err
+		}
 	}
 	dl.NativeIntBitWidths = widths
-}
-
-func getUInt64(str string) uint64 {
-	val, err := strconv.ParseUint(str, 10, 64)
-	if err != nil {
-		panic(err.Error())
-	}
-	return val
+	return nil
 }
 
 func (dl *DataLayout) LLString() string {
