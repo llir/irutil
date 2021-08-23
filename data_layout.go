@@ -171,7 +171,7 @@ func addFuncPtrAlignFromString(spec string, dl *DataLayout) {
 	} else if strings.HasPrefix(val, "n") {
 		typ = "n"
 	} else {
-		panic("Invalid Function pointer alignment type, possible options are \"i\", \"n\".")
+		panic(fmt.Errorf(`invalid function pointer alignment type, expected "i" or "n" prefix, got %q`, spec))
 	}
 	abi := getUInt64(strings.TrimPrefix(val, typ))
 	dl.FunctionPointerAlignment = NewFunctionPointerAlignment(typ == "i", abi)
