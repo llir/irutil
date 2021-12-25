@@ -4,6 +4,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"strings"
 )
 
 // NewZero returns a new zero value of the given type.
@@ -22,4 +23,12 @@ func NewZero(typ types.Type) value.Value {
 // the given UTF-8 string contents.
 func NewCString(s string) *constant.CharArray {
 	return constant.NewCharArrayFromString(s + "\x00")
+}
+
+// NewPString returns a pascal string
+func NewPString(s string) *constant.CharArray {
+	var sb strings.Builder
+	sb.WriteRune(rune(len(s)))
+	sb.WriteString(s)
+	return constant.NewCharArrayFromString(sb.String())
 }
