@@ -1,10 +1,12 @@
 package irutil
 
 import (
+	"encoding/binary"
+	"strings"
+
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"strings"
 )
 
 // NewZero returns a new zero value of the given type.
@@ -25,10 +27,15 @@ func NewCString(s string) *constant.CharArray {
 	return constant.NewCharArrayFromString(s + "\x00")
 }
 
-// NewPString returns a pascal string
-func NewPString(s string) *constant.CharArray {
+// NewPascalString returns a pascal string
+func NewPascalString(s string) *constant.CharArray {
 	var sb strings.Builder
-	sb.WriteRune(rune(len(s)))
+	bs := make([]byte, 4)
+	binary.BigEndian.PutUint32(bs, uint32(len(s)))
+	sb.WriteByte(bs[0])
+	sb.WriteByte(bs[1])
+	sb.WriteByte(bs[2])
+	sb.WriteByte(bs[3])
 	sb.WriteString(s)
 	return constant.NewCharArrayFromString(sb.String())
 }
