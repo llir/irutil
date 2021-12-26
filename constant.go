@@ -27,15 +27,16 @@ func NewCString(s string) *constant.CharArray {
 	return constant.NewCharArrayFromString(s + "\x00")
 }
 
-// NewPascalString returns a pascal string
+// NewPascalString returns a length-prefixed string, also known as a Pascal
+// string. The length prefix is stored as a 32-bit integer with big-endian
+// encoding.
 func NewPascalString(s string) *constant.CharArray {
-	var sb strings.Builder
-	bs := make([]byte, 4)
-	binary.BigEndian.PutUint32(bs, uint32(len(s)))
-	sb.WriteByte(bs[0])
-	sb.WriteByte(bs[1])
-	sb.WriteByte(bs[2])
-	sb.WriteByte(bs[3])
-	sb.WriteString(s)
-	return constant.NewCharArrayFromString(sb.String())
+	var buf strings.Builder
+	var length [4]byte
+	binary.BigEndian.PutUint32(length[:], uint32(len(s)))
+	for _, b := range length {
+		buf.WriteByte(b)
+	}
+	buf.WriteString(s)
+	return constant.NewCharArrayFromString(buf.String())
 }
